@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=1920, user-scalable=no">
 <title>B and V's TV</title>
 <style>
 @font-face{font-family:'Luckiest Guy';src:url('fonts/luckiest-guy.woff2') format('woff2')}
@@ -272,14 +272,21 @@ main{flex-grow:1;min-width:0;position:relative}
   var page = 'home';
 
   // ---------- fit the 1920x1080 design to whatever the TV reports
+  // The app also makes the WebView zoom the 1920-wide page to the screen; this is the fallback,
+  // re-run from the app whenever the WebView's size changes (TVs often report 0 or a stale size at startup).
   function fit() {
-    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    var w = document.documentElement.clientWidth || window.innerWidth;
+    var h = document.documentElement.clientHeight || window.innerHeight;
+    if (!w || !h) return;
+    var s = Math.min(w / 1920, h / 1080, 1);
     var st = $('#stage');
-    st.style.transform = 'scale(' + s + ')';
-    st.style.left = Math.max(0, (window.innerWidth - 1920 * s) / 2) + 'px';
-    st.style.top = Math.max(0, (window.innerHeight - 1080 * s) / 2) + 'px';
+    st.style.transform = s === 1 ? '' : 'scale(' + s + ')';
+    st.style.left = Math.max(0, (w - 1920 * s) / 2) + 'px';
+    st.style.top = Math.max(0, (h - 1080 * s) / 2) + 'px';
   }
+  window.fit = fit;
   window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
 
   // ---------- little helpers
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
