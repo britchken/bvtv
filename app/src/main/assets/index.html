@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B and V's TV</title>
+<style>
+@font-face{font-family:'Luckiest Guy';src:url('fonts/luckiest-guy.woff2') format('woff2')}
+@font-face{font-family:'Comic Neue';font-weight:700;src:url('fonts/comic-neue-700.woff2') format('woff2')}
+@font-face{font-family:'VT323';src:url('fonts/vt323.woff2') format('woff2')}
+@font-face{font-family:'Press Start 2P';src:url('fonts/press-start-2p.woff2') format('woff2')}
+
+:root{--wordart:linear-gradient(180deg,#FF0000 0%,#FF9900 20%,#FFFF00 40%,#00FF00 60%,#00CCFF 80%,#CC00FF 100%)}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000080}
+button{font:inherit;color:inherit;cursor:pointer;margin:0}
+*{box-sizing:border-box}
+
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;
+  background-color:#000080;
+  background-image:radial-gradient(#FFFFFF 1.5px,transparent 2px),radial-gradient(#FFFF00 1.5px,transparent 2px),radial-gradient(#66FFFF 1px,transparent 1.5px);
+  background-size:70px 70px,110px 110px,50px 50px;background-position:0 0,35px 55px,20px 10px;
+  color:#FFFFFF;font-family:'Comic Neue','Comic Sans MS',cursive;font-weight:700;display:flex;flex-direction:column}
+
+.marquee-bar{height:56px;flex-shrink:0;background:#FF0000;border-bottom:4px solid #FFFF00;display:flex;align-items:center;
+  font-family:'Press Start 2P',monospace;font-size:22px;color:#FFFF00;overflow:hidden;white-space:nowrap}
+.marquee-bar marquee{width:100%}
+
+.body{flex-grow:1;min-height:0;display:flex;gap:32px;padding:28px 32px}
+
+/* Win95 bits */
+.win{background:#C0C0C0;border:5px outset #FFFFFF;color:#000000;display:flex;flex-direction:column}
+.titlebar{background:#000080;color:#FFFFFF;font-family:'Press Start 2P',monospace;font-size:14px;padding:10px 12px;display:flex;justify-content:space-between}
+
+nav.win{width:250px;flex-shrink:0}
+.menu{padding:16px;display:flex;flex-direction:column;gap:14px;flex-grow:1}
+.nav-btn{display:flex;align-items:center;gap:14px;height:72px;padding:0 16px;background:#C0C0C0;border:5px outset #FFFFFF;font-size:32px;color:#000;text-align:left}
+.nav-btn.current{background:#FFFF00;border-style:inset;border-color:#808080}
+.nav-btn svg{flex-shrink:0}
+.counter{background:#000;color:#FF3333;font-family:'VT323',monospace;font-size:44px;text-align:center;border:4px inset #808080;letter-spacing:4px}
+.stripe{height:40px;background-image:repeating-linear-gradient(45deg,#FFCC00 0 18px,#000 18px 36px);border:3px solid #000}
+
+main{flex-grow:1;min-width:0;position:relative}
+.page{display:none;position:absolute;inset:0;flex-direction:column;gap:20px}
+.page.active{display:flex}
+
+.wordart{margin:0;font-family:'Luckiest Guy',Impact,sans-serif;font-weight:400;line-height:1;letter-spacing:4px;
+  background-image:var(--wordart);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:3px #000;
+  filter:drop-shadow(8px 8px 0 #000) drop-shadow(4px 4px 0 #FF00FF);
+  transform:perspective(700px) rotateX(14deg) rotate(-3deg) skewX(-10deg);transform-origin:left center;white-space:nowrap}
+.header{display:flex;justify-content:space-between;align-items:center;height:150px;flex-shrink:0}
+
+.section-title{display:flex;align-items:baseline;gap:20px}
+.section-title h2{margin:0;font-family:'Luckiest Guy',Impact,sans-serif;font-weight:400;font-size:40px;-webkit-text-stroke:2px #000}
+.section-title span{font-size:22px;color:#FFFF99}
+
+.row{display:grid;gap:22px}
+.row6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.row7{grid-template-columns:repeat(7,minmax(0,1fr))}
+
+.tile{height:90px;border:7px outset #FFFFFF;background:#C0C0C0;color:#000;font-size:24px;padding:4px 8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;min-width:0}
+.tile img{height:44px;max-width:100%;object-fit:contain}
+.tile-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1}
+.tile.ghost{background:transparent;border:7px dashed #FFFFFF;color:#FFFFFF}
+.tile.silver{background:#C0C0C0;border-color:#FFFFFF;color:#000}
+.tile.small{height:84px}
+
+.focusable{position:relative;outline:none;transition:transform 80ms}
+.focusable:focus{outline:8px dashed #FFFF00;outline-offset:2px;box-shadow:0 0 0 18px #FF0000;transform:rotate(-2deg) scale(1.07);z-index:5}
+.nav-btn:focus{transform:scale(1.04)}
+
+/* home hero */
+.hero{display:flex;gap:28px;height:300px;flex-shrink:0}
+#jump{width:900px;flex-shrink:0;background:#000;border:10px dashed #FFFF00;color:#FFF;padding:28px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left}
+#jump:focus{transform:scale(1.02);box-shadow:0 0 0 14px #FF0000}
+.hero-kicker{display:flex;align-items:center;gap:20px}
+.hero-kicker b{font-family:'Luckiest Guy',Impact,sans-serif;font-weight:400;font-size:46px;color:#FF9900;-webkit-text-stroke:1px #FFFF00}
+.hero-kicker i{font-style:normal;font-family:'Press Start 2P',monospace;font-size:14px;color:#FFF;background:#FF00FF;padding:6px 8px}
+.hero-app{display:flex;align-items:center;gap:28px}
+.hero-app img{height:100px;max-width:180px;object-fit:contain}
+#jumpTitle{font-size:56px}
+#jumpSub{font-size:26px;color:#66FFFF}
+.side{flex-grow:1;display:flex;flex-direction:column;gap:20px}
+.card{flex-grow:1;border:7px outset #FFFFFF;color:#000;padding:18px 22px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left}
+.card small{font-family:'Press Start 2P',monospace;font-size:15px}
+.card span{font-size:36px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* clock */
+.clock{padding:8px;gap:6px}
+.clock .face{background:#000;border:4px inset #808080;color:#33FF33;font-family:'VT323',monospace;font-size:84px;line-height:.9;padding:2px 20px;white-space:nowrap}
+.clock .face span{font-size:44px}
+.clock .date{font-size:22px;text-align:center}
+@keyframes blink{50%{opacity:0}}
+.blink{animation:blink 1s steps(1) infinite}
+
+.inputs{display:flex;align-items:center;gap:18px;flex-shrink:0}
+.inputs > b{font-family:'Luckiest Guy',Impact,sans-serif;font-weight:400;font-size:38px;color:#FFFF00;-webkit-text-stroke:2px #000;text-shadow:3px 3px 0 #0066FF}
+.input-btn{height:64px;background:#C0C0C0;border:5px outset #FFFFFF;font-size:24px;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
+.input-btn em{font-style:normal;font-family:'Press Start 2P',monospace;font-size:15px;color:#000080}
+
+/* apps page */
+.sort{display:flex;gap:14px}
+.sort button{height:64px;padding:0 22px;background:#C0C0C0;border:5px outset #FFFFFF;color:#000;font-size:24px}
+.sort button.on{background:#FFFF00;border-style:inset;border-color:#808080}
+#allGrid{flex-grow:1;min-height:0;overflow-y:auto;padding:22px;margin:-22px;scrollbar-width:none}
+#allGrid::-webkit-scrollbar{display:none}
+#allGrid .row{gap:18px}
+
+/* settings page */
+.cpanel{flex-grow:1;min-height:0}
+.cgrid{flex-grow:1;padding:32px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:28px}
+.cgrid button{background:#C0C0C0;border:7px outset #FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-size:30px;color:#000}
+.cgrid button.pink{background:#FF66FF;border-color:#FFCCFF}
+.status{border-top:3px solid #808080;padding:10px 16px;font-size:22px;display:flex;justify-content:space-between}
+
+#toast{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);background:#FFFF00;color:#000;border:6px outset #FFFF99;
+  font-size:34px;padding:16px 30px;display:none;z-index:50;box-shadow:8px 8px 0 #000}
+#toast.show{display:block}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div class="marquee-bar"><marquee id="joke" scrollamount="8">★ ★ ★ JOKE OF THE DAY: loading... ★ ★ ★</marquee></div>
+
+  <div class="body">
+    <nav class="win" aria-label="Main">
+      <div class="titlebar"><span>MENU.EXE</span></div>
+      <div class="menu">
+        <button class="nav-btn focusable" data-page="home" id="navHome">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+        <button class="nav-btn focusable" data-page="apps">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Apps</button>
+        <button class="nav-btn focusable" id="navSearch">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search</button>
+        <button class="nav-btn focusable" id="navAlbum">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>TV Album</button>
+        <button class="nav-btn focusable" data-page="settings">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</button>
+        <div style="flex-grow:1"></div>
+        <div style="font-size:20px;text-align:center">You are visitor #</div>
+        <div class="counter" id="visitors">000001</div>
+        <div class="stripe"></div>
+      </div>
+    </nav>
+
+    <main>
+      <!-- HOME -->
+      <section class="page" id="page-home">
+        <div class="header">
+          <h1 class="wordart" style="font-size:124px">B and V's TV!!</h1>
+          <div class="win clock">
+            <div class="titlebar" style="font-size:12px;padding:6px 8px">CLOCK.EXE</div>
+            <div class="face"><b id="clockTime">--:--</b><span class="blink" id="clockAmPm"> AM</span></div>
+            <div class="date" id="clockDate"></div>
+          </div>
+        </div>
+
+        <div class="hero">
+          <button id="jump" class="focusable">
+            <div class="hero-kicker"><b>JUMP BACK IN!!!</b><i>&lt;-- U R HERE</i></div>
+            <div class="hero-app"><img id="jumpIcon" alt=""><div id="jumpTitle">Nothing yet!</div></div>
+            <div id="jumpSub">Open an app and it shows up here</div>
+          </button>
+          <div class="side">
+            <button id="upnext" class="card focusable" style="background:#00FF00;border-color:#99FF99"><small>UP NEXT &gt;&gt;</small><span id="upnextTitle">Browse all appz</span></button>
+            <button id="albumBtn" class="card focusable" style="background:#FF66FF;border-color:#FFCCFF"><small>TV ALBUM SLIDESHOW</small><span>Start the pix!</span></button>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title"><h2 style="color:#66FFFF;text-shadow:4px 4px 0 #0000FF">Recently UsEd</h2><span>fills in all by itself!!</span></div>
+          <div class="row row6" id="homeRecents" style="margin-top:10px"></div>
+        </div>
+
+        <div>
+          <div class="section-title"><h2 style="color:#00FF00;text-shadow:4px 4px 0 #FF00FF">~*~ My FaVeS ~*~</h2><span>hold OK on any app to pin it here</span></div>
+          <div class="row row6" id="homeFaves" style="margin-top:10px"></div>
+        </div>
+
+        <div class="inputs">
+          <b>InPuTz:</b>
+          <div class="row" id="inputRow" style="flex-grow:1;gap:18px"></div>
+        </div>
+      </section>
+
+      <!-- APPS -->
+      <section class="page" id="page-apps">
+        <div class="header" style="height:140px">
+          <h1 class="wordart" style="font-size:116px">All My AppZ</h1>
+          <div class="sort">
+            <button class="focusable" id="sortAz">Sort: A-Z</button>
+            <button class="focusable" id="sortUsed">Sort: Most used</button>
+            <button class="focusable" id="editFaves">Edit faves</button>
+          </div>
+        </div>
+        <div>
+          <div class="section-title"><h2 style="color:#66FFFF;text-shadow:4px 4px 0 #0000FF">Recently UsEd</h2></div>
+          <div class="row row7" id="appsRecents" style="margin-top:10px"></div>
+        </div>
+        <div>
+          <div class="section-title"><h2 style="color:#00FF00;text-shadow:4px 4px 0 #FF00FF">~*~ My FaVeS ~*~</h2><span>hold OK on any app to add or remove</span></div>
+          <div class="row row7" id="appsFaves" style="margin-top:10px"></div>
+        </div>
+        <div class="section-title"><h2 style="color:#FFFF00;text-shadow:4px 4px 0 #0066FF">EvErYtHiNg</h2><span id="appCount"></span></div>
+        <div id="allGrid"><div class="row row7" id="allRow"></div></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="page" id="page-settings">
+        <div class="header" style="height:140px">
+          <h1 class="wordart" style="font-size:120px">SeTtInGz</h1>
+        </div>
+        <div class="win cpanel">
+          <div class="titlebar" style="font-size:16px;padding:12px 14px"><span>Control Panel</span><span>_ □ X</span></div>
+          <div class="cgrid">
+            <button class="focusable" data-setting="wifi"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg>Wi-Fi &amp; Network</button>
+            <button class="focusable" data-setting="picture"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="2" y="4" width="20" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>Picture</button>
+            <button class="focusable" data-setting="sound"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>Sound</button>
+            <button class="focusable" data-setting="inputs"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h18v6l-3 3H6l-3-3z"/><path d="M7 11h10"/></svg>Inputs (HDMI)</button>
+            <button class="focusable" data-setting="apps"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Apps</button>
+            <button class="focusable pink" data-setting="homescreen"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>WordArt Style</button>
+            <button class="focusable" data-setting="screensaver"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/></svg>Screensaver</button>
+            <button class="focusable" data-setting="remote"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="8" y="2" width="8" height="20" rx="3"/><circle cx="12" cy="7" r="1.5"/><path d="M12 12v.01M12 15v.01M12 18v.01"/></svg>Remote &amp; Gadgets</button>
+            <button class="focusable" data-setting="accounts"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Accounts</button>
+            <button class="focusable" data-setting="system"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>All Settings</button>
+          </div>
+          <div class="status"><span id="styleStatus">WordArt style: rainbow</span><span>10 object(s)</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+
+  // ---------- running in a desktop browser for preview: fake the TV bridge
+  if (!window.TV) {
+    window.TV = {
+      getApps: function () { return JSON.stringify(['YouTube', 'Netflix', 'Max', 'Spotify', 'Synology Photos', 'Prime Video', 'Plex', 'Disney+', 'Hulu', 'Pluto TV'].map(function (n, i) { return { pkg: 'demo.app' + i, label: n, icon: '' }; })); },
+      getInputs: function () { return JSON.stringify([{ id: 'h1', label: 'HDMI 1', device: '' }, { id: 'h2', label: 'HDMI 2', device: 'PlayStation 5' }, { id: 'h3', label: 'HDMI 3', device: '' }, { id: 'h4', label: 'HDMI 4', device: '' }]); },
+      launch: function (p) { console.log('launch', p); }, openInput: function (id) { console.log('input', id); },
+      openSettings: function (w) { console.log('settings', w); }, openSearch: function () { console.log('search'); },
+      toast: function (m) { console.log(m); }
+    };
+    setTimeout(function () { window.setJoke && setJoke("Why don't skeletons fight each other? They don't have the guts."); }, 300);
+  }
+
+  // ---------- saved state (stays on the TV)
+  function load(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+
+  var WORDART = {
+    rainbow: 'linear-gradient(180deg,#FF0000 0%,#FF9900 20%,#FFFF00 40%,#00FF00 60%,#00CCFF 80%,#CC00FF 100%)',
+    fire: 'linear-gradient(180deg,#FFFF66 0%,#FFCC00 35%,#FF6600 65%,#CC0000 100%)',
+    chrome: 'linear-gradient(180deg,#FFFFFF 0%,#CCCCCC 45%,#666666 50%,#DDDDDD 75%,#FFFFFF 100%)',
+    ocean: 'linear-gradient(180deg,#CCFFFF 0%,#00FFFF 40%,#0066FF 70%,#000099 100%)'
+  };
+  var STYLES = Object.keys(WORDART);
+  var PALETTE = [['#FF00FF', '#FF99FF', '#000'], ['#00FFFF', '#99FFFF', '#000'], ['#FF9900', '#FFCC66', '#000'], ['#00FF00', '#99FF99', '#000'],
+                 ['#FFFF00', '#FFFF99', '#000'], ['#9900FF', '#CC99FF', '#FFF'], ['#FF3333', '#FF9999', '#000']];
+
+  var apps = [], appMap = {};
+  var recents = load('recents', []), faves = load('faves', []), counts = load('counts', {});
+  var sortMode = load('sort', 'az'), wordart = load('wordart', 'rainbow');
+  var page = 'home';
+
+  // ---------- fit the 1920x1080 design to whatever the TV reports
+  function fit() {
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    var st = $('#stage');
+    st.style.transform = 'scale(' + s + ')';
+    st.style.left = Math.max(0, (window.innerWidth - 1920 * s) / 2) + 'px';
+    st.style.top = Math.max(0, (window.innerHeight - 1080 * s) / 2) + 'px';
+  }
+  window.addEventListener('resize', fit);
+
+  // ---------- little helpers
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  var toastTimer;
+  function toast(msg) {
+    var t = $('#toast'); t.textContent = msg; t.className = 'show';
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.className = ''; }, 3000);
+  }
+  function installed(list) { return list.filter(function (p) { return appMap[p]; }); }
+
+  function applyWordart() {
+    if (!WORDART[wordart]) wordart = 'rainbow';
+    document.documentElement.style.setProperty('--wordart', WORDART[wordart]);
+    $('#styleStatus').textContent = 'WordArt style: ' + wordart;
+  }
+
+  function loadApps() {
+    try { apps = JSON.parse(TV.getApps()) || []; } catch (e) { apps = []; }
+    appMap = {};
+    apps.forEach(function (a) { appMap[a.pkg] = a; });
+  }
+
+  // ---------- actions
+  function launchApp(pkg) {
+    recents = [pkg].concat(recents.filter(function (p) { return p !== pkg; })).slice(0, 12);
+    counts[pkg] = (counts[pkg] || 0) + 1;
+    save('recents', recents); save('counts', counts);
+    TV.launch(pkg);
+  }
+  function toggleFave(pkg) {
+    var a = appMap[pkg]; if (!a) return;
+    var i = faves.indexOf(pkg);
+    if (i >= 0) { faves.splice(i, 1); toast(a.label + ' removed from faves'); }
+    else { faves.push(pkg); toast(a.label + ' added 2 FaVeS!!'); }
+    save('faves', faves);
+    var active = document.activeElement, rowId = active && active.parentElement ? active.parentElement.id : '';
+    renderPage();
+    var again = rowId && document.querySelector('#' + rowId + ' [data-pkg="' + pkg + '"]');
+    focusEl(again || firstIn(rowId ? '#' + rowId : '#page-' + page));
+  }
+  function openAlbum() {
+    var a = apps.filter(function (x) { return /synology photos/i.test(x.label); })[0];
+    if (a) launchApp(a.pkg);
+    else toast('Install Synology Photos from the Play Store first!');
+  }
+
+  // ---------- building tiles
+  function appTile(app, i, extra) {
+    var b = el('button', 'focusable tile' + (extra ? ' ' + extra : ''));
+    var p = PALETTE[i % PALETTE.length];
+    b.style.background = p[0]; b.style.borderColor = p[1]; b.style.color = p[2];
+    if (app.icon) { var im = el('img'); im.src = app.icon; im.alt = ''; b.appendChild(im); }
+    b.appendChild(el('span', 'tile-label', app.label));
+    b.setAttribute('data-pkg', app.pkg);
+    b._activate = function () { launchApp(app.pkg); };
+    b._long = function () { toggleFave(app.pkg); };
+    return b;
+  }
+  function ghost(text, onAct, extra) {
+    var b = el('button', 'focusable tile ghost' + (extra ? ' ' + extra : ''), text);
+    b._activate = onAct;
+    return b;
+  }
+  function goFaveHelp() { goPage('apps'); toast('Hold OK on any app 2 make it a fave!'); }
+
+  // ---------- pages
+  function renderHome() {
+    var rec = installed(recents);
+    var jump = $('#jump'), ji = $('#jumpIcon');
+    if (rec[0]) {
+      var a = appMap[rec[0]];
+      $('#jumpTitle').textContent = a.label;
+      if (a.icon) { ji.src = a.icon; ji.style.display = ''; } else { ji.style.display = 'none'; }
+      $('#jumpSub').textContent = 'The last thing u opened. Press OK 2 go back!';
+      jump._activate = function () { launchApp(a.pkg); };
+      jump._long = function () { toggleFave(a.pkg); };
+    } else {
+      $('#jumpTitle').textContent = 'Nothing yet!';
+      ji.style.display = 'none';
+      $('#jumpSub').textContent = 'Open an app and it shows up here';
+      jump._activate = function () { goPage('apps'); };
+      jump._long = null;
+    }
+    var up = $('#upnext');
+    if (rec[1]) {
+      var b = appMap[rec[1]];
+      $('#upnextTitle').textContent = b.label;
+      up._activate = function () { launchApp(b.pkg); };
+    } else {
+      $('#upnextTitle').textContent = 'Browse all appz';
+      up._activate = function () { goPage('apps'); };
+    }
+
+    var rr = $('#homeRecents'); rr.innerHTML = '';
+    rec.slice(0, 6).forEach(function (p, i) { rr.appendChild(appTile(appMap[p], i)); });
+    for (var i = rec.length; i < 6; i++) rr.appendChild(ghost('Open stuff!', function () { goPage('apps'); }));
+
+    var fav = installed(faves), fr = $('#homeFaves'); fr.innerHTML = '';
+    fav.slice(0, 5).forEach(function (p, j) { fr.appendChild(appTile(appMap[p], j + 4)); });
+    for (var k = fav.length; k < 5; k++) fr.appendChild(ghost('+ Add fave', goFaveHelp));
+    var all = el('button', 'focusable tile silver', 'All AppZ -->');
+    all._activate = function () { goPage('apps'); };
+    fr.appendChild(all);
+  }
+
+  function renderInputs() {
+    var list = [];
+    try { list = JSON.parse(TV.getInputs()) || []; } catch (e) { list = []; }
+    var row = $('#inputRow'); row.innerHTML = '';
+    var n = Math.max(1, Math.min(list.length, 4));
+    row.style.gridTemplateColumns = 'repeat(' + n + ',minmax(0,1fr))';
+    if (!list.length) {
+      var none = el('button', 'focusable input-btn', 'Use the Input button on the remote');
+      none._activate = function () { toast('No inputs found from here :('); };
+      row.appendChild(none);
+      return;
+    }
+    list.slice(0, 4).forEach(function (inp) {
+      var b = el('button', 'focusable input-btn');
+      var em = el('em', null, inp.label);
+      b.appendChild(em);
+      b.appendChild(document.createTextNode(' ' + (inp.device || '')));
+      b._activate = function () { TV.openInput(inp.id); };
+      row.appendChild(b);
+    });
+  }
+
+  function sortedApps() {
+    var list = apps.slice();
+    if (sortMode === 'used') list.sort(function (a, b) { return (counts[b.pkg] || 0) - (counts[a.pkg] || 0) || a.label.localeCompare(b.label); });
+    return list;
+  }
+
+  function renderApps() {
+    $('#sortAz').className = 'focusable' + (sortMode === 'az' ? ' on' : '');
+    $('#sortUsed').className = 'focusable' + (sortMode === 'used' ? ' on' : '');
+    var rec = installed(recents), rr = $('#appsRecents'); rr.innerHTML = '';
+    rec.slice(0, 7).forEach(function (p, i) { rr.appendChild(appTile(appMap[p], i, 'small')); });
+    for (var i = rec.length; i < 7; i++) rr.appendChild(ghost('Open stuff!', function () { focusEl(firstIn('#allRow')); }, 'small'));
+
+    var fav = installed(faves), fr = $('#appsFaves'); fr.innerHTML = '';
+    fav.slice(0, 7).forEach(function (p, j) { fr.appendChild(appTile(appMap[p], j + 4, 'small')); });
+    for (var k = fav.length; k < 7; k++) fr.appendChild(ghost('+ Add fave', function () { toast('Hold OK on any app 2 make it a fave!'); focusEl(firstIn('#allRow')); }, 'small'));
+
+    var ar = $('#allRow'); ar.innerHTML = '';
+    sortedApps().forEach(function (a) {
+      var t = appTile(a, 0, 'small');
+      t.style.background = '#C0C0C0'; t.style.borderColor = '#FFFFFF'; t.style.color = '#000';
+      if (faves.indexOf(a.pkg) >= 0) t.querySelector('.tile-label').textContent = '★ ' + a.label;
+      ar.appendChild(t);
+    });
+    $('#appCount').textContent = apps.length + ' appz installed';
+  }
+
+  function renderPage() {
+    if (page === 'home') { renderHome(); renderInputs(); }
+    else if (page === 'apps') renderApps();
+  }
+
+  function goPage(p) {
+    page = p;
+    $$('.page').forEach(function (s) { s.classList.toggle('active', s.id === 'page-' + p); });
+    $$('.nav-btn').forEach(function (b) { b.classList.toggle('current', b.getAttribute('data-page') === p); });
+    renderPage();
+    focusEl(p === 'home' ? $('#jump') : firstIn('#page-' + p));
+  }
+  window.goPage = goPage;
+
+  // ---------- remote control navigation (arrow keys move between the closest buttons)
+  function visible(e) {
+    if (!e.offsetParent) return false;
+    var pg = e.closest('.page');
+    return !pg || pg.classList.contains('active');
+  }
+  function focusables() { return $$('.focusable').filter(visible); }
+  function firstIn(sel) { var c = sel && document.querySelector(sel); if (!c) return null; return Array.prototype.slice.call(c.querySelectorAll('.focusable')).filter(visible)[0] || null; }
+  function focusEl(e) {
+    if (!e) return;
+    e.focus({ preventScroll: true });
+    if (e.closest('#allGrid')) e.scrollIntoView({ block: 'nearest' });
+  }
+
+  function move(dir) {
+    var cur = document.activeElement;
+    if (!cur || !cur.classList || !cur.classList.contains('focusable') || !visible(cur)) {
+      focusEl(page === 'home' ? $('#jump') : firstIn('#page-' + page)); return;
+    }
+    var r = cur.getBoundingClientRect();
+    var best = null, bestScore = Infinity;
+    focusables().forEach(function (c) {
+      if (c === cur) return;
+      var q = c.getBoundingClientRect(), along, across;
+      if (dir === 'right') { along = q.left - r.right; across = gap(r.top, r.bottom, q.top, q.bottom); if (q.left + q.width / 2 <= r.left + r.width / 2) return; }
+      else if (dir === 'left') { along = r.left - q.right; across = gap(r.top, r.bottom, q.top, q.bottom); if (q.left + q.width / 2 >= r.left + r.width / 2) return; }
+      else if (dir === 'down') { along = q.top - r.bottom; across = gap(r.left, r.right, q.left, q.right); if (q.top + q.height / 2 <= r.top + r.height / 2) return; }
+      else { along = r.top - q.bottom; across = gap(r.left, r.right, q.left, q.right); if (q.top + q.height / 2 >= r.top + r.height / 2) return; }
+      var score = Math.max(along, 0) + across * 3;
+      if (score < bestScore) { bestScore = score; best = c; }
+    });
+    if (best) focusEl(best);
+  }
+  function gap(a1, a2, b1, b2) { return Math.max(0, Math.max(a1, b1) - Math.min(a2, b2)); }
+
+  function activate(e) {
+    if (!e) return;
+    if (e._activate) e._activate();
+  }
+
+  // OK button: a quick press opens, holding it for a moment pins/unpins a fave
+  var pressTimer = null, longFired = false, pressing = false;
+  function isOk(ev) { return ev.key === 'Enter' || ev.keyCode === 13 || ev.keyCode === 23 || ev.key === ' '; }
+  document.addEventListener('keydown', function (ev) {
+    var dirs = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', 37: 'left', 39: 'right', 38: 'up', 40: 'down' };
+    var d = dirs[ev.key] || dirs[ev.keyCode];
+    if (d) { ev.preventDefault(); move(d); return; }
+    if (isOk(ev)) {
+      ev.preventDefault();
+      if (pressing) return;
+      pressing = true; longFired = false;
+      var target = document.activeElement;
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(function () {
+        if (target && target._long) { longFired = true; target._long(); }
+      }, 650);
+    }
+  });
+  document.addEventListener('keyup', function (ev) {
+    if (!isOk(ev)) return;
+    ev.preventDefault();
+    clearTimeout(pressTimer);
+    if (pressing && !longFired) activate(document.activeElement);
+    pressing = false; longFired = false;
+  });
+  // mouse / touch clicks (handy for testing on a computer)
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest && ev.target.closest('.focusable');
+    if (t) { ev.preventDefault(); focusEl(t); activate(t); }
+  });
+
+  // ---------- wire up the fixed buttons
+  $$('.nav-btn[data-page]').forEach(function (b) { b._activate = function () { goPage(b.getAttribute('data-page')); }; });
+  $('#navSearch')._activate = function () { TV.openSearch(); };
+  $('#navAlbum')._activate = openAlbum;
+  $('#albumBtn')._activate = openAlbum;
+  $('#sortAz')._activate = function () { sortMode = 'az'; save('sort', sortMode); renderApps(); focusEl($('#sortAz')); };
+  $('#sortUsed')._activate = function () { sortMode = 'used'; save('sort', sortMode); renderApps(); focusEl($('#sortUsed')); };
+  $('#editFaves')._activate = function () { toast('Hold OK on any app below 2 add or remove it!'); focusEl(firstIn('#allRow')); };
+  $$('[data-setting]').forEach(function (b) {
+    var which = b.getAttribute('data-setting');
+    b._activate = function () {
+      if (which === 'homescreen') {
+        wordart = STYLES[(STYLES.indexOf(wordart) + 1) % STYLES.length];
+        save('wordart', wordart); applyWordart(); toast('WordArt is now: ' + wordart.toUpperCase() + '!!');
+      } else if (which === 'inputs') {
+        goPage('home'); focusEl(firstIn('#inputRow'));
+      } else {
+        TV.openSettings(which);
+      }
+    };
+  });
+
+  // ---------- clock + visitor counter
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function tick() {
+    var d = new Date(), h = d.getHours(), m = d.getMinutes();
+    $('#clockTime').textContent = ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m;
+    $('#clockAmPm').textContent = h < 12 ? ' AM' : ' PM';
+    $('#clockDate').textContent = DAYS[d.getDay()] + ' ~ ' + MONTHS[d.getMonth()] + ' ' + d.getDate();
+  }
+  function bumpVisitors() {
+    var v = load('visitors', 0) + 1; save('visitors', v);
+    var s = String(v); while (s.length < 6) s = '0' + s;
+    $('#visitors').textContent = s;
+  }
+
+  // ---------- called from the Android side
+  window.setJoke = function (text) {
+    $('#joke').textContent = '★ ★ ★ JOKE OF THE DAY: ' + text + ' ★ ★ ★';
+  };
+  window.onResumeTV = function () {
+    bumpVisitors(); tick();
+    loadApps();
+    recents = load('recents', recents);
+    renderPage();
+  };
+  window.onBack = function () {
+    if (page !== 'home') goPage('home');
+    else focusEl($('#jump'));
+  };
+
+  // ---------- start
+  fit(); applyWordart(); tick(); setInterval(tick, 5000);
+  goPage('home');
+  setTimeout(function () { loadApps(); renderPage(); if (!document.activeElement || document.activeElement === document.body) focusEl($('#jump')); }, 30);
+})();
+</script>
+</body>
+</html>

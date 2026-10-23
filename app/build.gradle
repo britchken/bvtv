@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.bandv.retrotv'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.bandv.retrotv'
+        minSdk 24
+        targetSdk 35
+        // Each GitHub build gets a higher number, so a new APK installs over the old one.
+        versionCode Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+        versionName "1.0." + (System.getenv('GITHUB_RUN_NUMBER') ?: '0')
+    }
+
+    // A fixed signing key, so updates install over the previous version
+    // instead of needing an uninstall first. This app is only ever sideloaded.
+    signingConfigs {
+        release {
+            storeFile file('retrotv.keystore')
+            storePassword 'retrotv'
+            keyAlias 'retrotv'
+            keyPassword 'retrotv'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
