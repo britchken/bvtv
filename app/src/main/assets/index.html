@@ -93,9 +93,9 @@ main{flex-grow:1;min-width:0;position:relative}
 @keyframes blink{50%{opacity:0}}
 .blink{animation:blink 1s steps(1) infinite}
 
-.inputs{display:flex;align-items:center;gap:18px;flex-shrink:0}
+.inputs{display:flex;align-items:center;gap:18px;flex-shrink:0;margin-top:26px}
 .inputs > b{font-family:'Luckiest Guy',Impact,sans-serif;font-weight:400;font-size:38px;color:#FFFF00;-webkit-text-stroke:2px #000;text-shadow:3px 3px 0 #0066FF}
-.input-btn{height:64px;background:#C0C0C0;border:5px outset #FFFFFF;font-size:24px;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
+.input-btn{height:64px;background:#99CCFF;border:5px outset #DDEEFF;font-size:24px;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
 .input-btn em{font-style:normal;font-family:'Press Start 2P',monospace;font-size:15px;color:#000080}
 
 /* apps page */
@@ -395,6 +395,14 @@ main{flex-grow:1;min-width:0;position:relative}
   function renderInputs() {
     var list = [];
     try { list = JSON.parse(TV.getInputs()) || []; } catch (e) { list = []; }
+    // The TV lists inputs in no particular order: put them in port order, HDMI 1 first.
+    // Use the number in the built-in name ("HDMI 2"); failing that, the last number in the
+    // input's hardware id (e.g. ".../HW3"), which follows the port order too.
+    function portNum(inp) {
+      var m = /(\d+)/.exec(inp.port || '') || /(\d+)\D*$/.exec(inp.id || '') || /(\d+)/.exec(inp.label || '');
+      return m ? +m[1] : 99;
+    }
+    list.sort(function (a, b) { return portNum(a) - portNum(b) || String(a.id).localeCompare(String(b.id)); });
     var row = $('#inputRow'); row.innerHTML = '';
     var n = Math.max(1, Math.min(list.length, 4));
     row.style.gridTemplateColumns = 'repeat(' + n + ',minmax(0,1fr))';
@@ -404,11 +412,13 @@ main{flex-grow:1;min-width:0;position:relative}
       row.appendChild(none);
       return;
     }
-    list.slice(0, 4).forEach(function (inp) {
+    list.slice(0, 4).forEach(function (inp, i) {
       var b = el('button', 'focusable input-btn');
-      var em = el('em', null, inp.label);
-      b.appendChild(em);
-      b.appendChild(document.createTextNode(' ' + (inp.device || '')));
+      // Always lead with the port ("HDMI 1"), then the name you gave it or the box plugged in, if any.
+      var port = /\d/.test(inp.port || '') ? inp.port : /\d/.test(inp.label || '') && !inp.port ? inp.label : 'HDMI ' + (i + 1);
+      var extra = inp.label && inp.label !== port && inp.label !== inp.port ? inp.label : (inp.device || '');
+      b.appendChild(el('em', null, port));
+      b.appendChild(document.createTextNode(' ' + extra));
       b._activate = function () { TV.openInput(inp.id); };
       row.appendChild(b);
     });
@@ -451,7 +461,7 @@ main{flex-grow:1;min-width:0;position:relative}
     $$('.page').forEach(function (s) { s.classList.toggle('active', s.id === 'page-' + p); });
     $$('.nav-btn').forEach(function (b) { b.classList.toggle('current', b.getAttribute('data-page') === p); });
     renderPage();
-    focusEl(p === 'home' ? $('#jump') : firstIn('#page-' + p));
+    focusEl(p === 'home' ? $('#jump') : p === 'apps' ? firstIn('#appsRecents') : firstIn('#page-' + p));
   }
   window.goPage = goPage;
 
@@ -467,28 +477,64 @@ main{flex-grow:1;min-width:0;position:relative}
     if (!e) return;
     e.focus({ preventScroll: true });
     if (e.closest('#allGrid')) e.scrollIntoView({ block: 'nearest' });
+    if (!inNav(e)) lastOnPage[page] = e;
   }
+
+  // Where a button sits in the 1920x1080 layout, ignoring the tilt/zoom of the focused one
+  // and accounting for how far the app grid is scrolled.
+  function rect(e) {
+    var x = 0, y = 0, n = e;
+    while (n && n.id !== 'stage') { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+    var grid = e.closest('#allGrid');
+    if (grid) y -= grid.scrollTop;
+    return { left: x, top: y, right: x + e.offsetWidth, bottom: y + e.offsetHeight };
+  }
+  function inNav(e) { return !!e.closest('nav'); }
+  function currentNavBtn() { return $('.nav-btn[data-page="' + page + '"]') || $('#navHome'); }
+
+  var lastOnPage = {}; // the last button used on each page, so Right from the menu goes back to it
 
   function move(dir) {
     var cur = document.activeElement;
     if (!cur || !cur.classList || !cur.classList.contains('focusable') || !visible(cur)) {
       focusEl(page === 'home' ? $('#jump') : firstIn('#page-' + page)); return;
     }
-    var r = cur.getBoundingClientRect();
-    var best = null, bestScore = Infinity;
-    focusables().forEach(function (c) {
-      if (c === cur) return;
-      var q = c.getBoundingClientRect(), along, across;
-      if (dir === 'right') { along = q.left - r.right; across = gap(r.top, r.bottom, q.top, q.bottom); if (q.left + q.width / 2 <= r.left + r.width / 2) return; }
-      else if (dir === 'left') { along = r.left - q.right; across = gap(r.top, r.bottom, q.top, q.bottom); if (q.left + q.width / 2 >= r.left + r.width / 2) return; }
-      else if (dir === 'down') { along = q.top - r.bottom; across = gap(r.left, r.right, q.left, q.right); if (q.top + q.height / 2 <= r.top + r.height / 2) return; }
-      else { along = r.top - q.bottom; across = gap(r.left, r.right, q.left, q.right); if (q.top + q.height / 2 >= r.top + r.height / 2) return; }
-      var score = Math.max(along, 0) + across * 3;
-      if (score < bestScore) { bestScore = score; best = c; }
-    });
+    // Right from the side menu: back to where you were on the page
+    if (dir === 'right' && inNav(cur)) {
+      var back = lastOnPage[page];
+      focusEl(back && visible(back) && document.contains(back) ? back : (page === 'home' ? $('#jump') : page === 'apps' ? firstIn('#appsRecents') : firstIn('#page-' + page)));
+      return;
+    }
+    var best = pick(cur, dir, focusables().filter(function (c) { return inNav(c) === inNav(cur); }));
+    // Left off the edge of the page: into the menu, on this page's button
+    if (!best && dir === 'left' && !inNav(cur)) best = currentNavBtn();
     if (best) focusEl(best);
   }
-  function gap(a1, a2, b1, b2) { return Math.max(0, Math.max(a1, b1) - Math.min(a2, b2)); }
+
+  // Only buttons that are really in that direction count. Ones directly in line win;
+  // among those the nearest row/column wins, then the one lined up with the current button's start edge.
+  function pick(cur, dir, list) {
+    var r = rect(cur), horiz = dir === 'left' || dir === 'right', best = null, bestKey = null;
+    list.forEach(function (c) {
+      if (c === cur) return;
+      var q = rect(c), along;
+      if (dir === 'down') along = q.top - r.bottom;
+      else if (dir === 'up') along = r.top - q.bottom;
+      else if (dir === 'right') along = q.left - r.right;
+      else along = r.left - q.right;
+      if (along < -8) return; // not actually in that direction
+      var overlap = horiz ? Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top)
+                          : Math.min(r.right, q.right) - Math.max(r.left, q.left);
+      var inLine = overlap > 0 ? 0 : 1;
+      if (inLine && horiz) return; // Left/Right stay on the same row; only Up/Down may move diagonally
+      var offset = horiz ? Math.abs(q.top - r.top) : Math.abs(q.left - r.left);
+      var key = [inLine, Math.round(Math.max(along, 0) / 24), inLine ? -overlap : offset];
+      if (!bestKey || key[0] < bestKey[0] || (key[0] === bestKey[0] && (key[1] < bestKey[1] || (key[1] === bestKey[1] && key[2] < bestKey[2])))) {
+        best = c; bestKey = key;
+      }
+    });
+    return best;
+  }
 
   function activate(e) {
     if (!e) return;

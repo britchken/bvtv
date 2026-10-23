@@ -308,10 +308,13 @@ public class MainActivity extends Activity {
                     if (info.getParentId() != null) continue;
                     if (info.isHidden(MainActivity.this)) continue;
                     CharSequence custom = info.loadCustomLabel(MainActivity.this);
-                    CharSequence label = (custom != null && custom.length() > 0) ? custom : info.loadLabel(MainActivity.this);
+                    CharSequence port = info.loadLabel(MainActivity.this);
+                    CharSequence label = (custom != null && custom.length() > 0) ? custom : port;
                     JSONObject o = new JSONObject();
                     o.put("id", info.getId());
                     o.put("label", label == null ? "HDMI" : label.toString());
+                    // The built-in name (e.g. "HDMI 2") even when renamed, so the page can sort by port.
+                    o.put("port", port == null ? "" : port.toString());
                     String dev = childNames.get(info.getId());
                     o.put("device", dev == null ? "" : dev);
                     arr.put(o);
